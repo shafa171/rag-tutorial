@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retrieval &amp; RAG · Shafa Siddiqua</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300..700&family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#05070d;overflow:hidden;font-family:'Space Grotesk',Arial,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center}
+.slide{position:absolute;inset:0;display:none}
+.slide.on{display:block}
+.slide>section{position:relative;width:1920px;height:1080px;overflow:hidden}
+#stage *,#stage *::before,#stage *::after{box-sizing:border-box}
+#stage p,#stage h1,#stage h2,#stage h3,#stage ul,#stage ol{margin:0}
+#stage p{font-size:32px;line-height:1.4}
+#stage h1{line-height:1.1}#stage h2{line-height:1.15}#stage h3{line-height:1.2}
+#stage ul,#stage ol{padding-left:1.3em}
+#stage hr{border:0;margin:0}
+#stage table{border-collapse:collapse}
+#stage th,#stage td{padding:.35em .6em;text-align:left;vertical-align:top;border-bottom:1px solid rgba(128,128,128,.28)}
+#stage th{font-weight:600}
+#stage a{color:inherit}
+#stage aside{display:none}
+#stage .conn{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+#ui{position:fixed;right:16px;bottom:12px;font:13px/1 'JetBrains Mono',monospace;color:#8A93AD;display:flex;gap:10px;align-items:center;opacity:.25;transition:opacity .3s;z-index:5}
+#ui:hover{opacity:1}
+#ui button{background:#161B30;color:#F4EFE6;border:1px solid #2A3150;border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+#notes{position:fixed;left:16px;right:16px;bottom:52px;max-height:40vh;overflow:auto;background:rgba(14,18,32,.96);color:#F4EFE6;border:1px solid #2A3150;border-radius:12px;padding:16px 20px;font:15px/1.55 'Space Grotesk',Arial,sans-serif;white-space:pre-wrap;display:none;z-index:6}
+#notes.on{display:block}
+#hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);font:13px 'Space Grotesk',Arial,sans-serif;color:#8A93AD;background:rgba(22,27,48,.9);border:1px solid #2A3150;border-radius:999px;padding:8px 16px;transition:opacity .6s;z-index:5;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="stage">
+<div class="slide" data-i="0">
+<section id="cover" data-transition="fade" style="display:flex; flex-direction:column; gap:32px; justify-content:end; padding:128px; background:radial-gradient(circle at 75% 40%, #1c2445 0%, #0e1220 62%)">
+  <iframe class="embed" style="position:absolute; top:0; left:0; width:1920px; height:1080px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;x.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const N=110,P=[];for(let i=0;N&gt;i;i++)P.push({x:.45+Math.random()*.55,y:Math.random(),vx:(Math.random()-.5)*.0005,vy:(Math.random()-.5)*.0005});
+let t=0;const q={x:.7,y:.4};
+function f(){t++;x.clearRect(0,0,W,H);
+q.x=.7+.12*Math.sin(t/260);q.y=.45+.2*Math.cos(t/330);
+for(const p of P){p.x+=p.vx;p.y+=p.vy;if(p.x&gt;1||.42&gt;p.x)p.vx*=-1;if(p.y&gt;1||0&gt;p.y)p.vy*=-1}
+const R=Math.min(W,H)*.13;x.lineWidth=1;
+for(let i=0;N&gt;i;i++)for(let j=i+1;N&gt;j;j++){const a=P[i],b=P[j],d=Math.hypot((a.x-b.x)*W,(a.y-b.y)*H);if(R&gt;d){x.strokeStyle=&#x27;rgba(92,200,194,&#x27;+(0.2*(1-d/R))+&#x27;)&#x27;;x.beginPath();x.moveTo(a.x*W,a.y*H);x.lineTo(b.x*W,b.y*H);x.stroke()}}
+const s=P.map((p,i)=&gt;[Math.hypot((p.x-q.x)*W,(p.y-q.y)*H),i]).sort((a,b)=&gt;a[0]-b[0]).slice(0,4);
+x.strokeStyle=&#x27;rgba(242,165,65,.85)&#x27;;x.lineWidth=2;
+for(const v of s){x.beginPath();x.moveTo(q.x*W,q.y*H);x.lineTo(P[v[1]].x*W,P[v[1]].y*H);x.stroke()}
+for(let i=0;N&gt;i;i++){const near=s.some(v=&gt;v[1]===i);x.fillStyle=near?&#x27;#F2A541&#x27;:&#x27;rgba(184,192,212,.55)&#x27;;x.beginPath();x.arc(P[i].x*W,P[i].y*H,near?6:3,0,7);x.fill()}
+const pr=12+5*Math.sin(t/14);x.fillStyle=&#x27;rgba(242,165,65,.18)&#x27;;x.beginPath();x.arc(q.x*W,q.y*H,pr*2.4,0,7);x.fill();
+x.fillStyle=&#x27;#F2A541&#x27;;x.beginPath();x.arc(q.x*W,q.y*H,9,0,7);x.fill();
+requestAnimationFrame(f)}f();
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+  <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; letter-spacing:4px; text-transform:uppercase; color:#f2a541">Advanced GenAI · Technical tutorial</p>
+  <h1 style="font-family:Fraunces, Georgia, serif; font-size:180px; font-weight:400; line-height:1; color:#f4efe6">Retrieval<br>&amp; RAG</h1>
+  <p style="width:1000px; font-family:'Space Grotesk', Arial, sans-serif; font-size:44px; line-height:1.3; color:#b8c0d4">How language models learn to look things up &nbsp;and why they still get it wrong</p>
+  <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#8a93ad">Shafa Siddiqua · October 16, 2026</p>
+  <aside>~30 min plan: Hook (3) · Core idea + pipeline (4) · Retrieval deep dive (10) · Generation + demo (6) · Beyond naive RAG (4) · Eval, critique, discussion (3). The animation behind the title is literally the topic: the amber dot is a query vector moving through an embedding space, and the amber lines connect it to its nearest neighbours. By the end of the talk everyone should be able to explain what that picture means.</aside>
+</section>
+</div>
+<div class="slide" data-i="1">
+<section id="hook" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">November 2022 · Vancouver</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">His grandmother had just died. He asked an airline’s chatbot one question.</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:24px;width:860px">
+<p style="align-self:end;font-size:32px;background:#1B2033;color:#F4EFE6;padding:24px 32px;border-radius:28px 28px 6px 28px">Do you offer bereavement fares?</p>
+<p style="align-self:start;font-size:32px;line-height:1.35;background:#FFFFFF;color:#1B2033;padding:24px 32px;border-radius:28px 28px 28px 6px;border:2px solid #E2DACB;width:760px">Yes, book now, then apply for the reduced fare within 90 days of buying your ticket.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#6A6F82">Air Canada chatbot (paraphrased)</p>
+</div>
+<div data-build-in="pop" style="position:absolute;left:1080px;top:470px;width:712px;background:#1B2033;border-radius:24px;padding:40px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(27,32,51,0.25)">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#F2A541">The actual policy page</p>
+<p style="font-size:36px;line-height:1.35;color:#F4EFE6">Bereavement discounts must be requested <b>before</b> travel. No retroactive refunds.</p>
+<p style="font-size:24px;color:#B8C0D4">One click away, on the same website.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6A6F82">Moffatt v. Air Canada, 2024 BCCRT 149 (B.C. Civil Resolution Tribunal)</p>
+<aside>Tell it as a story, slowly. Jake Moffatt’s grandmother died; he asked Air Canada’s website chatbot about bereavement fares. It told him he could book a full-price ticket and claim the discount retroactively. He did. The airline then refused, because its real policy page said the discount had to be requested before travel.
+
+Click to reveal the policy card. Pause. Ask the room: “Who is liable here: the airline, or the chatbot?” Take one or two answers before advancing.</aside>
+</section>
+</div>
+<div class="slide" data-i="2">
+<section id="verdict" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:48px">
+<div style="display:flex;gap:96px;align-items:end">
+<div style="display:flex;flex-direction:column;gap:16px;width:760px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">February 14, 2024 · The verdict</p>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:170px;font-weight:400;line-height:1.0;color:#F4EFE6;white-space:nowrap">$812.02</p>
+<p style="font-size:32px;line-height:1.4;color:#B8C0D4">CAD the airline was ordered to pay: the fare difference, interest and tribunal fees.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;border-left:4px solid #F2A541;padding:8px 0 8px 48px">
+<p style="font-size:32px;line-height:1.4;color:#B8C0D4">The airline argued the chatbot was responsible for its own words. The tribunal disagreed:</p>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-style:italic;line-height:1.25;color:#F4EFE6">“…it is still just a part of Air Canada’s website.”</p>
+<p style="font-size:24px;color:#8A93AD">Tribunal member Christopher Rivers</p>
+</div>
+</div>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:56px;font-weight:400;line-height:1.2;color:#F4EFE6">The right answer existed one click away. <span style="color:#F2A541">Retrieval is how you close that gap.</span></p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A93AD">Sources: Moffatt v. Air Canada, 2024 BCCRT 149; coverage in Kiplinger and AI Business, Feb 2024</p>
+<aside>Key point: the model wasn’t missing knowledge that was hard to find. The correct policy was on the same site. The model answered from what it “remembered” (its weights) instead of looking it up. Legally, the company owns whatever its model says.
+
+Bridge: “So the question for the next 25 minutes is: how do we make a model look things up, and how does that still go wrong?” Note it was a small sum but a widely cited precedent.</aside>
+</section>
+</div>
+<div class="slide" data-i="3">
+<section id="problem" data-section="The core idea of RAG and the end-to-end pipeline" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">The problem</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Everything a model knows is frozen into its weights</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:40px">
+<svg viewBox="0 0 24 24" style="color:#F2A541;width:56px;height:56px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">Stale</h3>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">Knowledge stops at the training cutoff. Policies, prices and people keep changing.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:40px">
+<svg viewBox="0 0 24 24" style="color:#F2A541;width:56px;height:56px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">Private</h3>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">It never saw your wiki, your tickets, your contracts, and it shouldn’t.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:40px">
+<svg viewBox="0 0 24 24" style="color:#F2A541;width:56px;height:56px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5"/><path d="M12 18h.01"/></svg>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">Unsourced</h3>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">It can’t say where an answer came from, and it fills gaps fluently.</p>
+</div>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#B8C0D4">Fine-tuning is good at teaching <i>style and format</i>. It is a slow, costly and still uncited way to add or update <i>facts</i>.</p>
+<aside>Three failure modes of parametric memory. The Air Canada bot hit all three in one go: the answer was specific to the company (private), it’s the kind of thing that changes (stale), and the bot gave no source a customer could check (unsourced).
+
+Pre-empt the obvious question: “why not just fine-tune on the docs?” Fine-tuning shapes behaviour well, but injecting new facts is unreliable, has to be redone every time the docs change, and still gives no citations.</aside>
+</section>
+</div>
+<div class="slide" data-i="4">
+<section id="rag-idea" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">The core idea</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">Turn a closed-book exam into an open-book one</h2>
+</div>
+<div style="display:flex;gap:56px;align-items:stretch">
+<div style="width:780px;display:flex;flex-direction:column;gap:40px;justify-content:center">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#6A6F82">Closed book</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1B2033;background:#E9E2D4;padding:24px 28px;border-radius:14px">answer = LLM(question)</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#A85F00">Open book · RAG</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#F4EFE6;background:#1B2033;padding:24px 28px;border-radius:14px">answer = LLM(question, retrieve(question))</p>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#4A5068">Knowledge now lives in an index you can <b>read, update, restrict and cite</b>, not only in the weights.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;background:#1B2033;color:#F4EFE6;border-radius:24px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#F2A541">Lewis et al., NeurIPS 2020</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:1.5;color:#F4EFE6">p(y | x) ≈ Σ<span style="color:#5CC8C2">z ∈ top-k(x)</span><br>p<span style="color:#F2A541">η</span>(z | x) · p<span style="color:#5CC8C2">θ</span>(y | x, z)</p>
+<hr style="border-top:2px solid #2A3150;width:100%">
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4"><span style="color:#F2A541">p</span><span style="color:#F2A541">η</span> retriever: dense query and passage encoders (DPR) over Wikipedia</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4"><span style="color:#5CC8C2">pθ</span> generator: a seq2seq model (BART) that reads each passage</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4"><b>Σ</b> marginalize over the top-k passages, trained end to end</p>
+</div>
+</div>
+<aside>Analogy first: closed-book exam = answer from memory; open-book = look it up, then answer. That’s the whole idea.
+
+Then the formal version from the paper that named it: Lewis et al. 2020 (“Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks”). Treat the retrieved passage z as a latent variable: the retriever gives a distribution over passages, the generator produces the answer given each passage, and you marginalize over the top-k. The retriever’s query encoder was fine-tuned jointly with the generator.
+
+Worth noting: most production “RAG” today doesn’t train anything end to end. It glues an off-the-shelf retriever to an off-the-shelf LLM through the prompt. Same idea, looser coupling.</aside>
+</section>
+</div>
+<div class="slide" data-i="5">
+<section id="pipeline" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">The pipeline</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Two loops: build the index once, query it always</h2>
+<p data-build-in="fade order 1" style="position:absolute;left:128px;top:300px;width:600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;color:#5CC8C2">OFFLINE · INDEXING</p>
+<div data-build-in="rise order 1" style="position:absolute;left:128px;top:340px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Documents</p><p style="font-size:24px;color:#8A93AD;text-align:center">PDFs, wikis</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5CC8C2"/></marker></defs><line x1="338" y1="400" x2="418" y2="400" stroke="#5CC8C2" stroke-width="3" marker-end="url(#arrow1)"/></svg>
+<div data-build-in="rise order 2" style="position:absolute;left:418px;top:340px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Chunk</p><p style="font-size:24px;color:#8A93AD;text-align:center">split text</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5CC8C2"/></marker></defs><line x1="628" y1="400" x2="708" y2="400" stroke="#5CC8C2" stroke-width="3" marker-end="url(#arrow2)"/></svg>
+<div data-build-in="rise order 3" style="position:absolute;left:708px;top:340px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Embed</p><p style="font-size:24px;color:#8A93AD;text-align:center">text → vector</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5CC8C2"/></marker></defs><line x1="918" y1="400" x2="998" y2="400" stroke="#5CC8C2" stroke-width="3" marker-end="url(#arrow3)"/></svg>
+<div data-build-in="rise order 4" style="position:absolute;left:998px;top:340px;width:210px;height:120px;background:#0E1220;border:3px solid #F2A541;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Index</p><p style="font-size:24px;color:#8A93AD;text-align:center">vector + BM25</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="1103" y1="460" x2="1103" y2="640" stroke="#F2A541" stroke-width="3" stroke-dasharray="10 8" marker-end="url(#arrow4)"/></svg>
+<p data-build-in="fade order 6" style="position:absolute;left:128px;top:596px;width:600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;color:#F2A541">ONLINE · EVERY QUERY</p>
+<div data-build-in="rise order 6" style="position:absolute;left:128px;top:640px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Question</p><p style="font-size:24px;color:#8A93AD;text-align:center">user input</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="338" y1="700" x2="418" y2="700" stroke="#F2A541" stroke-width="3" marker-end="url(#arrow5)"/></svg>
+<div data-build-in="rise order 7" style="position:absolute;left:418px;top:640px;width:210px;height:120px;background:#0E1220;border:2px dashed #4A5378;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Rewrite</p><p style="font-size:24px;color:#8A93AD;text-align:center">optional</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="628" y1="700" x2="708" y2="700" stroke="#F2A541" stroke-width="3" marker-end="url(#arrow6)"/></svg>
+<div data-build-in="rise order 8" style="position:absolute;left:708px;top:640px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Embed</p><p style="font-size:24px;color:#8A93AD;text-align:center">same model</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="918" y1="700" x2="998" y2="700" stroke="#F2A541" stroke-width="3" marker-end="url(#arrow7)"/></svg>
+<div data-build-in="rise order 9" style="position:absolute;left:998px;top:640px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Search</p><p style="font-size:24px;color:#8A93AD;text-align:center">top-k ANN</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="1208" y1="700" x2="1288" y2="700" stroke="#F2A541" stroke-width="3" marker-end="url(#arrow8)"/></svg>
+<div data-build-in="rise order 10" style="position:absolute;left:1288px;top:640px;width:210px;height:120px;background:#0E1220;border:2px solid #2A3150;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Rerank</p><p style="font-size:24px;color:#8A93AD;text-align:center">keep best ~5</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#F2A541"/></marker></defs><line x1="1498" y1="700" x2="1578" y2="700" stroke="#F2A541" stroke-width="3" marker-end="url(#arrow9)"/></svg>
+<div data-build-in="rise order 11" style="position:absolute;left:1578px;top:640px;width:210px;height:120px;background:#0E1220;border:3px solid #5CC8C2;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><p style="font-size:30px;font-weight:600;text-align:center">Generate</p><p style="font-size:24px;color:#8A93AD;text-align:center">LLM + context</p></div>
+<svg class="conn" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true"><defs><marker id="arrow10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5CC8C2"/></marker></defs><line x1="1683" y1="760" x2="1683" y2="830" stroke="#5CC8C2" stroke-width="3" marker-end="url(#arrow10)"/></svg>
+<div data-build-in="pop order 12" style="position:absolute;left:1578px;top:830px;width:210px;height:90px;background:#5CC8C2;border-radius:45px;display:flex;flex-direction:column;justify-content:center;align-items:center"><p style="font-size:26px;font-weight:700;color:#0E1220;text-align:center">Cited answer</p></div>
+<p data-build-in="fade order 13" style="position:absolute;left:128px;top:840px;width:1360px;font-size:30px;line-height:1.4;color:#B8C0D4">Offline runs once per corpus change. Online runs on <b>every</b> query. That’s where the latency budget lives.</p>
+<aside>Click through the builds. Top lane = indexing (offline): load docs, split them into chunks, embed each chunk, store vectors (and usually a keyword index too). Bottom lane = serving (online): optionally rewrite the question, embed it with the SAME embedding model, search for the top-k nearest chunks, rerank to a handful, stuff them into the prompt, generate with citations.
+
+Signpost: “The next 10 minutes walk this diagram left to right. Every box is a design decision, and every box is a place where the Air Canada bug could have been caught.”</aside>
+</section>
+</div>
+<div class="slide" data-i="6">
+<section id="chunking" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:56px">
+<iframe class="embed" style="position:absolute;left:1032px;top:300px;width:760px;height:620px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+const L=[];for(let i=0;18&gt;i;i++)L.push(.5+Math.random()*.45);
+function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function wrap(t,x,y,m,lh){const w=t.split(&#x27; &#x27;);let s=&#x27;&#x27;;for(const k of w){const n=s?s+&#x27; &#x27;+k:k;if(g.measureText(n).width&gt;m){g.fillText(s,x,y);y+=lh;s=k}else s=n}g.fillText(s,x,y);return y+lh}
+const T0=performance.now();
+function f(now){const t=((now-T0)/1000)%11;g.clearRect(0,0,W,H);
+const dx=6,dy=10,dw=W*.36,dh=H-20,lh=(dh-60)/18;
+rr(dx,dy,dw,dh,14);g.fillStyle=&#x27;#161B30&#x27;;g.fill();g.strokeStyle=&#x27;#2A3150&#x27;;g.lineWidth=2;g.stroke();
+for(let i=0;18&gt;i;i++){const hi=(i&gt;=8)*(12&gt;i)*(t&gt;3);g.fillStyle=hi?&#x27;#F2A541&#x27;:&#x27;rgba(184,192,212,.35)&#x27;;g.fillRect(dx+22,dy+30+i*lh,(dw-44)*L[i],lh*.42)}
+const cuts=Math.min(4,Math.floor(t/.6));g.strokeStyle=&#x27;#5CC8C2&#x27;;g.setLineDash([8,6]);g.lineWidth=2;
+for(let k=1;cuts&gt;=k;k++){const yy=dy+30+k*4*lh-lh*.3;g.beginPath();g.moveTo(dx+8,yy);g.lineTo(dx+dw-8,yy);g.stroke()}
+g.setLineDash([]);
+if(t&gt;3){const p=Math.min(1,(t-3)/.8),cx=W*.42,cw=W*.58-6,cy=dy;g.globalAlpha=p;
+g.strokeStyle=&#x27;#F2A541&#x27;;g.lineWidth=2;g.beginPath();g.moveTo(dx+dw,dy+30+10*lh);g.lineTo(cx,cy+270);g.stroke();
+if(t&gt;6.5){g.globalAlpha=Math.min(1,(t-6.5)/.6);rr(cx,cy,cw,160,14);g.fillStyle=&#x27;rgba(92,200,194,.14)&#x27;;g.fill();g.strokeStyle=&#x27;#5CC8C2&#x27;;g.stroke();g.fillStyle=&#x27;#5CC8C2&#x27;;g.font=&#x27;600 24px &#x27;+F;wrap(&#x27;+ context: from ACME Corp’s Q2 2023 SEC filing; prior-quarter revenue was $314M.&#x27;,cx+20,cy+42,cw-40,32);g.globalAlpha=p}
+const y=cy+180;rr(cx,y,cw,210,14);g.fillStyle=&#x27;#1C2340&#x27;;g.fill();g.strokeStyle=&#x27;#F2A541&#x27;;g.stroke();
+g.fillStyle=&#x27;#F4EFE6&#x27;;g.font=&#x27;28px &#x27;+F;wrap(&#x27;“The company’s revenue grew by 3% over the previous quarter.”&#x27;,cx+20,y+50,cw-40,38);
+g.fillStyle=&#x27;#8A93AD&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(&#x27;chunk #3, on its own&#x27;,cx+20,y+185);
+if((t&gt;4.5)*(6.5&gt;t)){g.globalAlpha=Math.min(1,(t-4.5)/.5);g.fillStyle=&#x27;#FF8A7A&#x27;;g.font=&#x27;600 30px &#x27;+F;wrap(&#x27;Which company? Which quarter?&#x27;,cx,y+270,cw,40)}
+if(t&gt;=6.5){g.fillStyle=&#x27;#5CC8C2&#x27;;g.font=&#x27;600 30px &#x27;+F;wrap(&#x27;Now a search for “ACME Q2 growth” can find it.&#x27;,cx,y+270,cw,40)}
+g.globalAlpha=1}
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Indexing · step 1</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Chunking decides what can be found</h2>
+</div>
+<div style="width:840px;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4"><span style="color:#F4EFE6"><b>Too big:</b></span> one vector averages many ideas. Matches get blurry and you pay for tokens nobody needed.</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4"><span style="color:#F4EFE6"><b>Too small:</b></span> facts lose their subject. A sentence about “the company” forgets which company.</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4"><span style="color:#F2A541"><b>Better:</b></span> split on structure (headings, paragraphs), overlap a little, and carry the title and section with every chunk.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#8A93AD">Fixed + overlap · recursive · semantic · late chunking</p>
+</div>
+<aside>Chunking is the first decision and the hardest to undo: whatever information a chunk loses at index time, no downstream model can recover.
+
+Walk the animation: the document is split along the dashed lines; one chunk is pulled out; on its own it says “the company’s revenue grew 3%”. Which company? Which quarter? A query about ACME’s Q2 growth may never match it. Then the teal box appears: a short context sentence prepended to the chunk. That’s Anthropic’s “contextual retrieval” example; we’ll see its numbers in a few slides.
+
+Strategy names to drop: fixed-size with overlap (simple baseline), recursive splitting by headings/paragraphs/sentences, semantic splitting (cut where embedding similarity between sentences drops), late chunking (embed the whole doc with a long-context encoder, then pool per chunk).</aside>
+</section>
+</div>
+<div class="slide" data-i="7">
+<section id="embeddings" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<iframe class="embed" style="position:absolute;left:1000px;top:290px;width:792px;height:640px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+const C=[{x:.24,y:.26,n:&#x27;billing&#x27;},{x:.72,y:.3,n:&#x27;account access&#x27;},{x:.4,y:.7,n:&#x27;shipping&#x27;}];
+const P=[];C.forEach((cl,k)=&gt;{for(let i=0;14&gt;i;i++){const a=Math.random()*6.283,r=.02+Math.random()*.09;P.push({x:cl.x+Math.cos(a)*r,y:cl.y+Math.sin(a)*r*1.1,k})}});
+const T={x:.63,y:.4},S={x:.95,y:.92},O={x:.04,y:.96};
+const near=P.map((p,i)=&gt;[(p.x-T.x)**2+(p.y-T.y)**2,i]).sort((a,b)=&gt;a[0]-b[0]).slice(0,3).map(v=&gt;v[1]);
+const T0=performance.now();
+function X(v){return v*W}function Y(v){return v*H}
+function f(now){const t=((now-T0)/1000)%11;g.clearRect(0,0,W,H);
+const a0=Math.min(1,t/1.2);
+g.font=&#x27;24px &#x27;+F;g.fillStyle=&#x27;rgba(184,192,212,&#x27;+(.8*a0)+&#x27;)&#x27;;C.forEach(cl=&gt;{g.fillText(cl.n,X(cl.x)-g.measureText(cl.n).width/2,Y(cl.y)-H*.15)});
+const ring=t&gt;4?Math.min(1,(t-4)/1.2):0;
+P.forEach((p,i)=&gt;{const hl=ring&gt;0.6?near.includes(i):false;g.fillStyle=hl?&#x27;#F2A541&#x27;:(p.k===1?&#x27;rgba(92,200,194,&#x27;+a0+&#x27;)&#x27;:&#x27;rgba(184,192,212,&#x27;+(.6*a0)+&#x27;)&#x27;);g.beginPath();g.arc(X(p.x),Y(p.y),hl?9:6,0,7);g.fill()});
+const m=t&gt;2?Math.min(1,(t-2)/1.8):0,e=1-Math.pow(1-m,3);
+const qx=S.x+(T.x-S.x)*e,qy=S.y+(T.y-S.y)*e;
+if(t&gt;2){if(ring&gt;0){g.strokeStyle=&#x27;rgba(242,165,65,.7)&#x27;;g.lineWidth=2;g.setLineDash([6,6]);g.beginPath();g.arc(X(qx),Y(qy),ring*W*.085,0,7);g.stroke();g.setLineDash([])}
+g.fillStyle=&#x27;#F2A541&#x27;;g.beginPath();g.arc(X(qx),Y(qy),11,0,7);g.fill();
+g.font=&#x27;600 26px &#x27;+F;g.fillText(&#x27;“I forgot how to sign in”&#x27;,X(qx)-150,Y(qy)+52)}
+if(t&gt;6.5){const v=Math.min(1,(t-6.5)/1),n=P[near[0]];g.globalAlpha=v;
+g.strokeStyle=&#x27;#F2A541&#x27;;g.lineWidth=3;g.beginPath();g.moveTo(X(O.x),Y(O.y));g.lineTo(X(T.x),Y(T.y));g.stroke();
+g.strokeStyle=&#x27;#5CC8C2&#x27;;g.beginPath();g.moveTo(X(O.x),Y(O.y));g.lineTo(X(n.x),Y(n.y));g.stroke();
+const a1=Math.atan2(Y(T.y)-Y(O.y),X(T.x)-X(O.x)),a2=Math.atan2(Y(n.y)-Y(O.y),X(n.x)-X(O.x));
+g.strokeStyle=&#x27;#F4EFE6&#x27;;g.lineWidth=2;g.beginPath();g.arc(X(O.x),Y(O.y),110,Math.min(a1,a2),Math.max(a1,a2));g.stroke();
+g.fillStyle=&#x27;#F4EFE6&#x27;;g.font=&#x27;italic 30px &#x27;+F;g.fillText(&#x27;θ&#x27;,X(O.x)+120,Y(O.y)-60);
+g.fillStyle=&#x27;#5CC8C2&#x27;;g.font=&#x27;600 24px &#x27;+F;g.fillText(&#x27;“Resetting your password”&#x27;,X(n.x)-40,Y(n.y)-28);
+g.globalAlpha=1}
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Indexing · step 2</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Meaning becomes geometry</h2>
+</div>
+<div style="width:820px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">An encoder maps any text to a vector of a few hundred to a few thousand numbers. Texts that <span style="color:#F4EFE6">mean</span> similar things land close together, even with zero words in common.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;color:#F4EFE6;background:#0E1220;border:2px solid #2A3150;border-radius:16px;padding:28px 32px">cos θ = q · d / (‖q‖ ‖d‖)</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4"><span style="color:#5CC8C2"><b>Bi-encoder</b></span>: documents are embedded once, offline. Only the query is embedded at request time. That’s what makes it fast.</p>
+</div>
+<aside>Walk the animation: three topic clusters appear. A query (“I forgot how to sign in”) flies in and lands in the “account access” cluster. The dashed ring grabs its nearest neighbours. Then the vectors from the origin appear: similarity is the angle θ between the query vector and a document vector (“Resetting your password”). Note the two share no keywords.
+
+Technical points: typical dimensions range from 384 (small open models) to 3,072 (large API models). With normalized vectors, cosine similarity equals the dot product, which is why vector DBs often just use inner product. Must use the same model for documents and queries. Embedding models are trained contrastively: pull matching (query, passage) pairs together, push others apart.
+
+Caveat for later: “close in embedding space” means “topically similar”, not “true” or “answers the question”.</aside>
+</section>
+</div>
+<div class="slide" data-i="8">
+<section id="ann" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<iframe class="embed" style="position:absolute;left:1000px;top:290px;width:792px;height:640px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+const P=[];for(let i=0;34&gt;i;i++)P.push({x:.04+Math.random()*.92,y:.12+Math.random()*.8});
+const SZ=[34,12,5],tg={x:.86,y:.75};
+function d2(a,b){return (a.x-b.x)**2+(a.y-b.y)**2}
+function nb(i,L){return [...Array(SZ[L]).keys()].filter(j=&gt;j!==i).sort((a,b)=&gt;d2(P[a],P[i])-d2(P[b],P[i])).slice(0,L===0?3:2)}
+let cur=0;for(let j=1;5&gt;j;j++)if(d2(P[j],tg)&gt;d2(P[cur],tg))cur=j;
+const path=[];for(let L=2;L&gt;=0;L--){path.push({L,i:cur});for(let s=0;40&gt;s;s++){let b=cur;for(const j of nb(cur,L))if(d2(P[b],tg)&gt;d2(P[j],tg))b=j;if(b===cur)break;cur=b;path.push({L,i:cur})}}
+const labels=[&#x27;Layer 0 · every vector&#x27;,&#x27;Layer 1&#x27;,&#x27;Layer 2 · express lanes&#x27;];
+function pt(L,i){const ph=H/3,top=(2-L)*ph;return [26+P[i].x*(W-52),top+18+P[i].y*(ph-30)]}
+function tp(L){const ph=H/3,top=(2-L)*ph;return [26+tg.x*(W-52),top+18+tg.y*(ph-30)]}
+const T0=performance.now();
+function f(now){const t=((now-T0)/1000)%(path.length*.7+4);g.clearRect(0,0,W,H);
+for(let L=2;L&gt;=0;L--){const ph=H/3,top=(2-L)*ph;g.fillStyle=&#x27;rgba(22,27,48,.9)&#x27;;g.fillRect(4,top+6,W-8,ph-12);g.strokeStyle=&#x27;#2A3150&#x27;;g.lineWidth=2;g.strokeRect(4,top+6,W-8,ph-12);
+g.fillStyle=&#x27;#8A93AD&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(labels[L],18,top+36);
+g.strokeStyle=&#x27;rgba(92,200,194,.22)&#x27;;g.lineWidth=1.5;for(let i=0;SZ[L]&gt;i;i++)for(const j of nb(i,L)){const a=pt(L,i),b=pt(L,j);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}
+for(let i=0;SZ[L]&gt;i;i++){const a=pt(L,i);g.fillStyle=&#x27;rgba(184,192,212,.7)&#x27;;g.beginPath();g.arc(a[0],a[1],L===0?4:6,0,7);g.fill()}
+const q=tp(L);g.strokeStyle=&#x27;#F2A541&#x27;;g.lineWidth=2;g.beginPath();g.arc(q[0],q[1],12,0,7);g.stroke()}
+const k=Math.min(path.length-1,Math.floor(t/.7));
+for(let s=1;k&gt;=s;s++){const A=path[s-1],B=path[s],a=pt(A.L,A.i),b=pt(B.L,B.i);g.strokeStyle=&#x27;#F2A541&#x27;;g.lineWidth=4;if(A.L!==B.L)g.setLineDash([6,6]);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([])}
+for(let s=0;k&gt;=s;s++){const a=pt(path[s].L,path[s].i);g.fillStyle=&#x27;#F2A541&#x27;;g.beginPath();g.arc(a[0],a[1],8,0,7);g.fill()}
+if(k===path.length-1){const a=pt(0,path[k].i);g.fillStyle=&#x27;#F2A541&#x27;;g.font=&#x27;600 24px &#x27;+F;g.fillText(&#x27;nearest neighbour&#x27;,Math.min(a[0]-110,W-230),a[1]-20)}
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Search · step 3</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Search without checking everyone</h2>
+</div>
+<div style="width:820px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px;background:#161B30;border-left:4px solid #FF8A7A;padding:24px 32px;border-radius:0 16px 16px 0">
+<p style="font-size:28px;color:#B8C0D4">Brute force: every vector, every query</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#F4EFE6">10⁹ vectors × 1,024 dims ≈ 10¹² ops</p>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4"><span style="color:#F2A541"><b>HNSW</b></span> builds a layered “small-world” graph. Start in a sparse top layer, hop greedily toward the query, drop a layer, repeat. Roughly logarithmic hops.</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">The catch: it’s <i>approximate</i>. You trade a little recall for a lot of speed, and you tune that trade (M, efSearch).</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#8A93AD">Also: IVF (probe a few clusters) · PQ (compress vectors)</p>
+</div>
+<aside>The numbers: exact nearest-neighbour search over a billion 1,024-dimensional vectors is on the order of a trillion multiply-adds for a single query. Not viable at interactive latency.
+
+Walk the animation: HNSW (Malkov &amp; Yashunin, 2016) stacks graphs like a skip list. The top layer has few nodes with long-range links (“express lanes”). Greedy search moves to whichever neighbour is closer to the query, and when it can’t improve, it drops to the next, denser layer and continues. The bottom layer contains every vector.
+
+Parameters: M = links per node (memory vs. recall), efSearch = size of the candidate list during search (latency vs. recall). Other families: IVF clusters vectors and only searches a few clusters; product quantization compresses vectors so more fit in memory. Libraries: FAISS, and most vector databases use HNSW or IVF variants.
+
+Critical point: “approximate” means the true best chunk can be skipped. One more place retrieval silently fails.</aside>
+</section>
+</div>
+<div class="slide" data-i="9">
+<section id="hybrid" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">Search · step 3b</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">Keywords and vectors fail in opposite places</h2>
+</div>
+<div style="display:flex;gap:48px;align-items:start">
+<table style="width:1060px;font-size:26px;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif">
+<tr style="background:#1B2033"><th style="width:40%;color:#F4EFE6">Query</th><th style="width:30%;color:#F4EFE6">Keyword · BM25</th><th style="width:30%;color:#F4EFE6">Dense vectors</th></tr>
+<tr><td>“error E-4012 in v2.3”</td><td style="color:#1F6F6A"><b>Wins</b>: exact token</td><td>May miss it</td></tr>
+<tr style="background:#EDE6D8"><td>“Priya Raman’s expense report”</td><td style="color:#1F6F6A"><b>Wins</b>: rare name</td><td>Names embed poorly</td></tr>
+<tr><td>“how do I get my money back?”</td><td>Misses “refund”</td><td style="color:#1F6F6A"><b>Wins</b>: same meaning</td></tr>
+<tr style="background:#EDE6D8"><td>“¿cómo cancelo mi pedido?”</td><td>Wrong language</td><td style="color:#1F6F6A"><b>Wins</b>: cross-lingual</td></tr>
+</table>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#1B2033;color:#F4EFE6;border-radius:24px;padding:40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#F2A541">So: do both, then fuse</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:30px;line-height:1.5;color:#F4EFE6">RRF(d) = Σᵢ 1 / (k + rankᵢ(d))</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#5CC8C2">k = 60</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4">Reciprocal Rank Fusion uses <i>ranks</i>, not scores, so there’s no need to calibrate BM25 against cosine.</p>
+</div>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#4A5068">BM25 ≈ term frequency (with diminishing returns) × rarity of the term (IDF), normalized by document length.</p>
+<aside>Ask the room before revealing: “Which of these would a vector search get wrong?” Most people assume vectors beat keywords everywhere.
+
+Dense retrieval struggles with exact identifiers (error codes, SKUs, version numbers) and rare proper nouns, because the embedding smooths them into “something about errors”. BM25 can’t bridge vocabulary gaps (“money back” vs “refund”) or languages.
+
+Hybrid search runs both and fuses the lists. Reciprocal Rank Fusion (Cormack, Clarke &amp; Büttcher, 2009): each list contributes 1/(k + rank); k = 60 damps the influence of top ranks. It’s robust because it ignores raw scores, which live on incomparable scales.
+
+Practical rule: hybrid + a reranker is the strong default baseline before trying anything fancy.</aside>
+</section>
+</div>
+<div class="slide" data-i="10">
+<section id="rerank" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Search · step 4</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Retrieve wide, then rerank narrow</h2>
+</div>
+<div style="display:flex;gap:24px;align-items:center">
+<p style="font-size:30px;font-weight:600;background:#0E1220;border:2px solid #2A3150;border-radius:40px;padding:16px 36px;color:#B8C0D4">Millions of chunks</p>
+<svg viewBox="0 0 24 24" style="color:#8A93AD;width:36px;height:36px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+<p style="font-size:30px;font-weight:600;background:#0E1220;border:2px solid #5CC8C2;border-radius:40px;padding:16px 36px;color:#5CC8C2">~100 candidates</p>
+<svg viewBox="0 0 24 24" style="color:#8A93AD;width:36px;height:36px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+<p style="font-size:30px;font-weight:600;background:#F2A541;border-radius:40px;padding:16px 36px;color:#0E1220">~5 in the prompt</p>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:36px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500">Bi-encoder</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2">enc(q) · enc(d)</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Fast:</b>documents encoded ahead of time.</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Blind spot:</b>query and document never see each other.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#8A93AD">→ first-stage recall</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#0E1220;border:3px solid #F2A541;border-radius:24px;padding:36px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500">Cross-encoder</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#F2A541">model([q ; d]) → score</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Accurate:</b>full attention across the pair.</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Slow:</b>one forward pass per pair, so only for the top ~100.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#8A93AD">→ reranking</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:36px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500">Late interaction</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2">Σᵢ maxⱼ sim(qᵢ, dⱼ)</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Middle ground:</b>a vector per token, matched at query time.</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4"><b style="color:#F4EFE6">Cost:</b>a much larger index.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#8A93AD">→ ColBERT (2020)</p>
+</div>
+</div>
+<aside>The funnel is the mental model: cheap, high-recall retrieval narrows millions of chunks to ~100; an expensive, high-precision model narrows ~100 to the handful that go in the prompt.
+
+Bi-encoders compress each text into one vector independently, so they can’t model fine interactions (“refund NOT available after travel” vs “refund available”). A cross-encoder reads query and document together with full attention and outputs a relevance score. It’s much more accurate, but you can’t precompute anything, so it only runs on the shortlist.
+
+ColBERT (Khattab &amp; Zaharia, 2020) keeps one vector per token. Score = for each query token, take its best-matching document token, sum over query tokens (“MaxSim”). Precomputable like a bi-encoder, finer-grained like a cross-encoder, but the index is many times larger.
+
+Tie back to Air Canada: the critical word in the policy was “before”. A cross-encoder is far more likely to notice that than a single averaged vector.</aside>
+</section>
+</div>
+<div class="slide" data-i="11">
+<section id="contextual" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<iframe class="embed" style="position:absolute;left:980px;top:300px;width:812px;height:600px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+const D=[[&#x27;Standard embeddings&#x27;,5.7,&#x27;&#x27;,&#x27;#8A93AD&#x27;],[&#x27;+ contextual embeddings&#x27;,3.7,&#x27;−35%&#x27;,&#x27;#5CC8C2&#x27;],[&#x27;+ contextual BM25&#x27;,2.9,&#x27;−49%&#x27;,&#x27;#5CC8C2&#x27;],[&#x27;+ reranking&#x27;,1.9,&#x27;−67%&#x27;,&#x27;#F2A541&#x27;]];
+const T0=performance.now();
+function f(now){const t=((now-T0)/1000)%12;g.clearRect(0,0,W,H);
+g.fillStyle=&#x27;#B8C0D4&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(&#x27;Top-20 retrieval failure rate · lower is better&#x27;,0,30);
+const max=6,bw=W-150,top=80,rowH=(H-top)/4;
+D.forEach((r,i)=&gt;{const y=top+i*rowH,p=Math.max(0,Math.min(1,(t-i*.6)/1.2)),e=1-Math.pow(1-p,3);
+g.fillStyle=&#x27;#F4EFE6&#x27;;g.font=&#x27;600 26px &#x27;+F;g.fillText(r[0],0,y+28);
+g.fillStyle=&#x27;rgba(42,49,80,.6)&#x27;;g.fillRect(0,y+44,bw,52);
+g.fillStyle=r[3];g.fillRect(0,y+44,bw*(r[1]/max)*e,52);
+if(p&gt;.95){g.fillStyle=&#x27;#F4EFE6&#x27;;g.font=&#x27;600 30px &#x27;+F;const tx=bw*(r[1]/max)+16;g.fillText(r[1].toFixed(1)+&#x27;%&#x27;,tx,y+81);
+if(r[2]){g.fillStyle=r[3];g.font=&#x27;600 26px &#x27;+F;g.fillText(r[2],tx+g.measureText(r[1].toFixed(1)+&#x27;%  &#x27;).width+10,y+81)}}});
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Case study · Anthropic, Sept 2024</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Contextual retrieval</h2>
+</div>
+<div style="width:780px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">Before indexing, an LLM writes a short note situating each chunk in its document. The note is prepended for <span style="color:#F4EFE6">both</span> the embedding and the BM25 index.</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">Prompt caching keeps it cheap: load the document once, reuse it for every chunk.</p>
+<div style="display:flex;flex-direction:column;gap:10px;background:#161B30;border-left:4px solid #FF8A7A;padding:24px 32px;border-radius:0 16px 16px 0">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#FF8A7A">Read the fine print</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4">Vendor-run benchmark. Metric = did the one “golden” chunk land in the top 20. Part of the gain is plain hybrid search.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A93AD">Source: Anthropic, “Introducing Contextual Retrieval” (Sept 2024): failure rate 5.7% → 3.7% → 2.9% → 1.9%</p>
+<aside>This is the chunking problem from earlier, solved at index time. For every chunk, an LLM (they used a small Claude model) gets the full document plus the chunk and writes 50 to 100 tokens of context. That context is prepended, then the result is both embedded and added to the BM25 index.
+
+Numbers (top-20 failure rate, averaged across their datasets): 5.7% baseline → 3.7% with contextual embeddings (−35%) → 2.9% adding contextual BM25 (−49%) → 1.9% adding a reranker (−67%).
+
+Critique, which counts toward “your own analysis”: (1) it’s the vendor evaluating its own method; (2) the metric only checks whether one gold chunk appears in the top 20, not whether the final answer improved; (3) the jump from −35% to −49% mixes two things: adding context to BM25, and simply adding BM25 at all (hybrid search). A cleaner ablation would show hybrid-without-context. Still, the idea is simple, cheap with caching, and widely reproduced.</aside>
+</section>
+</div>
+<div class="slide" data-i="12">
+<section id="statement" data-transition="fade" style="background:#F2A541;color:#0E1220;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#0E1220">Halfway checkpoint</p>
+<h1 style="font-family:'Fraunces', Georgia, serif;font-size:120px;font-weight:400;line-height:1.05;color:#0E1220">An answer can only be as good as what was retrieved.</h1>
+<p style="font-size:36px;line-height:1.4;color:#2B2410;width:1300px">Everything so far raises the ceiling. Next: what the model actually <i>does</i> with the context it’s handed.</p>
+<aside>Pause here (about 15 minutes in). Quick recap: chunking, embeddings, approximate search, hybrid, reranking, contextual retrieval. All of it exists to get the right evidence into the prompt.
+
+Transition: “But getting the right chunk into the prompt is necessary, not sufficient. Let’s look at the generation side.”</aside>
+</section>
+</div>
+<div class="slide" data-i="13">
+<section id="lost-middle" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<iframe class="embed" style="position:absolute;left:960px;top:290px;width:832px;height:610px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+function v(p){const s=(p-10.5)/9.5;return 53+(p&gt;10.5?11:23)*s*s}
+const L=70,R=20,T=50,B=90,lo=45,hi=80,base=56;
+function X(p){return L+(p-1)/19*(W-L-R)}function Y(a){return T+(hi-a)/(hi-lo)*(H-T-B)}
+const T0=performance.now();
+function f(now){const t=((now-T0)/1000)%11;g.clearRect(0,0,W,H);
+g.strokeStyle=&#x27;#4A5378&#x27;;g.lineWidth=2;g.beginPath();g.moveTo(L,T-10);g.lineTo(L,H-B);g.lineTo(W-R,H-B);g.stroke();
+g.fillStyle=&#x27;#B8C0D4&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(&#x27;accuracy&#x27;,L+10,T-18);
+g.fillText(&#x27;1st&#x27;,X(1)-14,H-B+36);g.fillText(&#x27;10th&#x27;,X(10)-22,H-B+36);g.fillText(&#x27;20th&#x27;,X(20)-40,H-B+36);
+g.fillText(&#x27;position of the answer among 20 documents&#x27;,L,H-12);
+g.strokeStyle=&#x27;#B8C0D4&#x27;;g.setLineDash([10,8]);g.lineWidth=2;g.beginPath();g.moveTo(L,Y(base));g.lineTo(W-R,Y(base));g.stroke();g.setLineDash([]);
+g.fillStyle=&#x27;#B8C0D4&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(&#x27;no documents at all&#x27;,W-R-230,Y(base)-12);
+const p=Math.min(1,t/3),n=1+18*p;
+if(t&gt;3.4){const a=Math.min(1,(t-3.4)/.8);g.globalAlpha=a;g.fillStyle=&#x27;rgba(255,138,122,.35)&#x27;;g.beginPath();let st=false;for(let q=1;20&gt;=q;q+=.1){if(base&gt;v(q)){if(!st){g.moveTo(X(q),Y(base));st=true}g.lineTo(X(q),Y(v(q)))}}
+for(let q=20;q&gt;=1;q-=.1){if(base&gt;v(q))g.lineTo(X(q),Y(base))}g.closePath();g.fill();
+g.fillStyle=&#x27;#FF8A7A&#x27;;g.font=&#x27;600 26px &#x27;+F;g.fillText(&#x27;worse than no context&#x27;,X(6.2),Y(49.5));g.globalAlpha=1}
+g.strokeStyle=&#x27;#F2A541&#x27;;g.lineWidth=5;g.beginPath();g.moveTo(X(1),Y(v(1)));for(let q=1;n&gt;=q;q+=.1)g.lineTo(X(q),Y(v(q)));g.stroke();
+[1,5,10,15,20].forEach(q=&gt;{if(n&gt;=q){g.fillStyle=&#x27;#F2A541&#x27;;g.beginPath();g.arc(X(q),Y(v(q)),8,0,7);g.fill()}});
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Generation · using the context</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Lost in the middle</h2>
+</div>
+<div style="width:760px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">Models use evidence at the <span style="color:#F4EFE6">start</span> and <span style="color:#F4EFE6">end</span> of the context far better than evidence buried in the middle, long-context models included.</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C0D4">In the paper, GPT-3.5-Turbo with the answer mid-context scored <span style="color:#FF8A7A"><b>below its no-documents baseline</b></span>.</p>
+<div style="display:flex;flex-direction:column;gap:10px;background:#0E1220;border-left:4px solid #5CC8C2;padding:24px 32px;border-radius:0 16px 16px 0">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#5CC8C2">So, in practice</p>
+<p style="font-size:26px;line-height:1.45;color:#B8C0D4">Send fewer, better chunks. Put the strongest evidence first. Rerank, then order on purpose. Ask for citations.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A93AD">Liu et al., “Lost in the Middle: How Language Models Use Long Contexts”, TACL 2024. Curve shows the shape of the effect, not exact values.</p>
+<aside>Experiment: multi-document QA. Give the model 20 retrieved documents, exactly one of which contains the answer, and move that document from position 1 to 20. Accuracy traces a U: high when the answer is first (primacy), decent when last (recency), lowest in the middle.
+
+The striking result: for GPT-3.5-Turbo, putting the answer in the middle gave lower accuracy than giving it no documents at all (closed-book, about 56%). More context actively hurt.
+
+Newer models have improved middle-of-context recall, but follow-up work (e.g. Chroma’s 2025 “context rot” report across 18 models) still finds performance degrading as inputs get longer and noisier. Practical lesson: retrieval isn’t just about recall; precision and ordering matter because the model is not a perfect reader.
+
+Be explicit that the chart is a sketch of the shape, not the paper’s exact numbers.</aside>
+</section>
+</div>
+<div class="slide" data-i="14">
+<section id="demo" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Live demo · ~5 minutes</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Which AI actually read <i style="color:#F2A541">the syllabus?</i></h2>
+</div>
+<div style="display:flex;gap:56px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;gap:28px;align-items:start"><p style="font-family:'Fraunces', Georgia, serif;font-size:56px;line-height:1;color:#F2A541;width:56px">1</p><p style="font-size:30px;line-height:1.4;color:#B8C0D4">You ask a question about this course.</p></div>
+<div style="display:flex;gap:28px;align-items:start"><p style="font-family:'Fraunces', Georgia, serif;font-size:56px;line-height:1;color:#F2A541;width:56px">2</p><p style="font-size:30px;line-height:1.4;color:#B8C0D4">Two assistants answer. One from <span style="color:#FF8A7A">memory</span>, one that <span style="color:#5CC8C2">reads the course page first</span>. You don’t know which is which.</p></div>
+<div style="display:flex;gap:28px;align-items:start"><p style="font-family:'Fraunces', Georgia, serif;font-size:56px;line-height:1;color:#F2A541;width:56px">3</p><p style="font-size:30px;line-height:1.4;color:#B8C0D4">Vote: which answer would you rely on?</p></div>
+<div style="display:flex;gap:28px;align-items:start"><p style="font-family:'Fraunces', Georgia, serif;font-size:56px;line-height:1;color:#F2A541;width:56px">4</p><p style="font-size:30px;line-height:1.4;color:#B8C0D4">Reveal, and see the exact passage it retrieved.</p></div>
+</div>
+<div style="width:560px;display:flex;flex-direction:column;justify-content:center;gap:24px;background:#161B30;border:2px solid #2A3150;border-radius:24px;padding:48px">
+<svg viewBox="0 0 24 24" style="color:#F2A541;width:64px;height:64px;flex:none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.15;color:#F4EFE6">Who Read the Syllabus?</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C0D4">Real retrieval over our real course page. Bring your hardest syllabus question.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#F2A541"><a target="_blank" rel="noopener" href="https://claude.ai/artifact/FyUr3A6JLRfCNePG9SCkFT">Open the demo</a></p>
+</div>
+</div>
+<aside>Switch to the “Who Read the Syllabus?” tab. Open it before class and run one question so the “allow” prompt is already done.
+
+1. Start with the first chip: “Can I turn in the final report 3 days late? What do I lose?” Both answers stream in. Ask the room to vote by raising hands: A or B?
+
+2. Press “Reveal which is which.” The memory-only assistant has never seen our course page, so it usually declines and tells you to check the syllabus or ask the instructor. The RAG assistant answers with the real policy: 10% off per 24 hours, so 3 days late costs 30%, and nothing is accepted after 4 days. The card shows the exact section it retrieved.
+
+3. The point: without retrieval, the best a careful model can do is say “I don’t know, go look it up.” That’s honest but useless. A careless model, like the Air Canada bot, invents an answer instead. Only retrieval turns “check the syllabus” into the actual answer. RAG is the model checking the syllabus for you.
+
+4. Take one or two questions from the room and type them in. Good extras: “Can I use ChatGPT on my project?”, “What score do I need for an A-?”, and something the page doesn’t cover, like “What’s the professor’s favorite movie?” Now both assistants should decline: retrieval only helps when the answer is in the documents. That’s rung 1 of the evaluation ladder.
+
+5. Open “How it works” to show the three retrieved sections (keyword search, top 3) and the two prompts side by side. The only difference between the assistants is that one prompt contains the course page excerpts.
+
+Model answers vary run to run, which is itself a teaching point.</aside>
+</section>
+</div>
+<div class="slide" data-i="15">
+<section id="advanced-query" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">Beyond naive RAG · fix the query</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">Users ask badly. Rewrite before you search.</h2>
+</div>
+<div style="display:flex;gap:32px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-radius:24px;padding:40px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">HyDE</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">Have the LLM draft a <i>hypothetical answer</i>, then embed the draft instead of the question.</p>
+<p style="font-size:28px;line-height:1.4;color:#1B2033">Why it works: answers look more like documents than questions do.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#A85F00">Gao et al., 2022</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-radius:24px;padding:40px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">Rewrite</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">Turn a chat turn into a standalone query.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#6A6F82">“what about students?”</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#1B2033">→ “Does the Pro plan have a student discount?”</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-radius:24px;padding:40px">
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">Decompose</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">Split a multi-hop question into searchable steps.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#1B2033">1 · who acquired GitHub?<br>2 · who is its CEO?<br>3 · when were they born?</p>
+</div>
+</div>
+<aside>Retrieval quality depends on the query, and real queries are short, vague, and conversational.
+
+HyDE (Gao et al., 2022, “Precise Zero-Shot Dense Retrieval without Relevance Labels”): generate a fake answer passage, embed it, search with that vector. The fake can contain errors. That’s fine: it’s only used to land in the right neighbourhood; the real documents provide the facts.
+
+Rewriting: in chat, “what about students?” is meaningless without history; resolve it into a standalone query before retrieving.
+
+Decomposition / multi-hop: “Was the CEO of the company that acquired GitHub born before 1970?” No single chunk answers it. Break it into sub-questions, retrieve for each, and chain. This is the bridge to agentic RAG in two slides.
+
+Cost: each rewrite is an extra LLM call before retrieval, which adds latency.</aside>
+</section>
+</div>
+<div class="slide" data-i="16">
+<section id="self-correcting" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:44px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Beyond naive RAG · check the evidence</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Don’t trust retrieval. Grade it.</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#5CC8C2">Self-RAG · Asai et al., 2023</p>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">The model critiques itself</h3>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Fine-tuned to emit <i>reflection tokens</i> while it writes:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.7;color:#F4EFE6">[Retrieve?] → [IsRelevant]<br>→ [IsSupported] → [IsUseful]</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Retrieval becomes on-demand, and each claim is checked against its passage.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#F2A541">CRAG · Yan et al., 2024</p>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:44px;font-weight:500">A grader checks the evidence</h3>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">A lightweight evaluator scores what came back:</p>
+<p style="font-size:28px;line-height:1.6;color:#B8C0D4"><span style="color:#5CC8C2"><b>Correct</b></span> → refine, keep key strips<br><span style="color:#FF8A7A"><b>Incorrect</b></span> → discard, search the web<br><span style="color:#F2A541"><b>Ambiguous</b></span> → do both</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Wraps around any existing pipeline.</p>
+</div>
+</div>
+<aside>Two influential ideas for making the system notice bad retrieval instead of confidently using it.
+
+Self-RAG (Asai et al., 2023): the LM is trained to generate special reflection tokens: whether to retrieve at all, whether a retrieved passage is relevant (ISREL), whether its own output is supported by the passage (ISSUP), and how useful the response is (ISUSE). At inference you can use these to filter or rank candidate continuations. Downside: requires training a model to speak this token vocabulary.
+
+Corrective RAG / CRAG (Yan et al., 2024): no change to the generator. A small retrieval evaluator assigns a confidence to the retrieved set; high → decompose and keep the relevant strips; low → throw it away and fall back to web search; in between → combine.
+
+The shared idea: retrieval quality is checked at runtime, not assumed. In production this often shows up as a simple LLM-as-judge “is this context sufficient to answer?” step.</aside>
+</section>
+</div>
+<div class="slide" data-i="17">
+<section id="graphrag" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Beyond naive RAG · structure</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">GraphRAG: global questions</h2>
+</div>
+<div style="display:flex;gap:56px;align-items:start">
+<div style="width:880px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4"><span style="color:#F4EFE6"><b>Local:</b></span> “What’s our refund window?” One chunk has it.<br><span style="color:#F4EFE6"><b>Global:</b></span> “What do customers complain about most, across 10,000 tickets?” No chunk has it.</p>
+<ol style="font-size:28px;line-height:1.5;color:#B8C0D4">
+<li>An LLM extracts entities and relationships from every chunk.</li>
+<li>Build a graph and detect communities (Leiden).</li>
+<li>Pre-write a summary of each community.</li>
+<li>Answer global questions by map-reducing over the summaries.</li>
+</ol>
+<p style="font-size:28px;line-height:1.4;color:#F2A541">Indexing is LLM-heavy and expensive: great for sensemaking, overkill for lookups.</p>
+</div>
+<svg aria-label="A knowledge graph with three colour-coded communities of connected entities" width="720" height="560" viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg">
+<circle cx="190" cy="170" r="135" fill="#5CC8C2" fill-opacity="0.12" stroke="#5CC8C2" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="8 8"/>
+<circle cx="525" cy="185" r="135" fill="#F2A541" fill-opacity="0.12" stroke="#F2A541" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="8 8"/>
+<circle cx="355" cy="420" r="130" fill="#B8C0D4" fill-opacity="0.10" stroke="#B8C0D4" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="8 8"/>
+<g stroke="#4A5378" stroke-width="2.5">
+<line x1="140" y1="120" x2="230" y2="110"/><line x1="230" y1="110" x2="260" y2="190"/><line x1="260" y1="190" x2="170" y2="225"/><line x1="170" y1="225" x2="110" y2="180"/><line x1="110" y1="180" x2="140" y2="120"/><line x1="140" y1="120" x2="260" y2="190"/>
+<line x1="490" y1="125" x2="580" y2="135"/><line x1="580" y1="135" x2="600" y2="230"/><line x1="600" y1="230" x2="510" y2="250"/><line x1="510" y1="250" x2="460" y2="185"/><line x1="460" y1="185" x2="490" y2="125"/><line x1="490" y1="125" x2="600" y2="230"/>
+<line x1="295" y1="380" x2="375" y2="360"/><line x1="375" y1="360" x2="435" y2="420"/><line x1="435" y1="420" x2="385" y2="490"/><line x1="385" y1="490" x2="305" y2="470"/><line x1="305" y1="470" x2="295" y2="380"/><line x1="375" y1="360" x2="385" y2="490"/>
+</g>
+<g stroke="#F4EFE6" stroke-width="2" stroke-dasharray="4 6" stroke-opacity="0.7">
+<line x1="260" y1="190" x2="460" y2="185"/><line x1="170" y1="225" x2="295" y2="380"/><line x1="510" y1="250" x2="435" y2="420"/>
+</g>
+<g fill="#5CC8C2"><circle cx="140" cy="120" r="14"/><circle cx="230" cy="110" r="11"/><circle cx="260" cy="190" r="16"/><circle cx="170" cy="225" r="12"/><circle cx="110" cy="180" r="10"/></g>
+<g fill="#F2A541"><circle cx="490" cy="125" r="12"/><circle cx="580" cy="135" r="10"/><circle cx="600" cy="230" r="14"/><circle cx="510" cy="250" r="16"/><circle cx="460" cy="185" r="12"/></g>
+<g fill="#B8C0D4"><circle cx="295" cy="380" r="12"/><circle cx="375" cy="360" r="16"/><circle cx="435" cy="420" r="14"/><circle cx="385" cy="490" r="11"/><circle cx="305" cy="470" r="10"/></g>
+</svg>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A93AD">Edge et al., “From Local to Global: A Graph RAG Approach to Query-Focused Summarization”, Microsoft Research, 2024</p>
+<aside>Classic RAG is built for needle-in-a-haystack questions. Ask it a “sensemaking” question about the whole corpus and top-k retrieval just returns k random-ish complaints.
+
+GraphRAG (Microsoft Research, Edge et al., 2024): at index time an LLM reads every chunk and extracts entities (people, products, issues) and relationships. That forms a knowledge graph. Community detection (Leiden algorithm) finds clusters of tightly connected entities (the dashed circles). The LLM writes a summary of each community, at several levels of granularity. At query time, global questions are answered by asking each community summary for a partial answer and then combining (map-reduce).
+
+Critique: indexing costs many LLM calls per chunk, and extraction errors become baked into the graph. Great for exploratory analysis of a fixed corpus; usually overkill for FAQ-style lookups.</aside>
+</section>
+</div>
+<div class="slide" data-i="18">
+<section id="agentic" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:44px">
+<iframe class="embed" style="position:absolute;left:1040px;top:290px;width:752px;height:640px;border:0;background:transparent;pointer-events:none" tabindex="-1" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;body style=&quot;margin:0;background:transparent;overflow:hidden&quot;&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+const c=document.getElementById(&#x27;c&#x27;),g=c.getContext(&#x27;2d&#x27;);let W,H;
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;c.style.width=W+&#x27;px&#x27;;c.style.height=H+&#x27;px&#x27;;g.setTransform(d,0,0,d,0,0)}rs();addEventListener(&#x27;resize&#x27;,rs);
+const F=&#x27;system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif&#x27;;
+const N=[&#x27;Plan&#x27;,&#x27;Search&#x27;,&#x27;Read&#x27;,&#x27;Enough?&#x27;],A=[-Math.PI/2,0,Math.PI/2,Math.PI];
+function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+const T0=performance.now();
+function f(now){const t=((now-T0)/1000)%12;g.clearRect(0,0,W,H);
+const cx=W/2,cy=H/2,R=Math.min(W,H)*.34;
+g.strokeStyle=&#x27;#4A5378&#x27;;g.lineWidth=4;g.beginPath();g.arc(cx,cy,R,0,7);g.stroke();
+const lap=4,laps=2.75;let ang,done=false;
+if(lap*laps&gt;t){ang=-Math.PI/2+(t/lap)*2*Math.PI}else{ang=Math.PI;done=true}
+let act=Math.round(((ang+Math.PI/2)/(Math.PI/2)))%4;
+N.forEach((n,i)=&gt;{const x=cx+R*Math.cos(A[i]),y=cy+R*Math.sin(A[i]);const on=!done?act===i:i===3;
+rr(x-85,y-36,170,72,18);g.fillStyle=on?&#x27;#F2A541&#x27;:&#x27;#0E1220&#x27;;g.fill();g.strokeStyle=on?&#x27;#F2A541&#x27;:&#x27;#4A5378&#x27;;g.lineWidth=2;g.stroke();
+g.fillStyle=on?&#x27;#0E1220&#x27;:&#x27;#F4EFE6&#x27;;g.font=&#x27;600 28px &#x27;+F;g.fillText(n,x-g.measureText(n).width/2,y+10)});
+g.fillStyle=&#x27;#8A93AD&#x27;;g.font=&#x27;24px &#x27;+F;const tl=&#x27;vector DB · SQL · web&#x27;;g.fillText(tl,Math.min(cx+R-g.measureText(tl).width/2,W-g.measureText(tl).width-4),cy+70);
+g.fillText(&#x27;no → search again&#x27;,cx-R-20,cy-80);
+if(!done){g.fillStyle=&#x27;#F2A541&#x27;;g.beginPath();g.arc(cx+R*Math.cos(ang),cy+R*Math.sin(ang),12,0,7);g.fill()}
+const ex=done?Math.min(1,(t-lap*laps)/.8):0;
+const ax=cx-R+85,bx=cx-70;
+g.strokeStyle=done?&#x27;#5CC8C2&#x27;:&#x27;#2A3150&#x27;;g.lineWidth=4;g.beginPath();g.moveTo(ax,cy);g.lineTo(bx,cy);g.stroke();
+g.fillStyle=done?&#x27;#5CC8C2&#x27;:&#x27;#2A3150&#x27;;g.beginPath();g.moveTo(bx+14,cy);g.lineTo(bx-6,cy-12);g.lineTo(bx-6,cy+12);g.closePath();g.fill();
+if(done){g.fillStyle=&#x27;#5CC8C2&#x27;;g.font=&#x27;24px &#x27;+F;g.fillText(&#x27;yes&#x27;,ax+20,cy-14);g.globalAlpha=ex;g.beginPath();g.arc(ax+(bx-ax)*ex,cy,10,0,7);g.fill()}
+rr(cx-62,cy-36,150,72,36);g.fillStyle=done?&#x27;#5CC8C2&#x27;:&#x27;#0E1220&#x27;;g.fill();g.strokeStyle=&#x27;#5CC8C2&#x27;;g.lineWidth=2;g.stroke();
+g.fillStyle=done?&#x27;#0E1220&#x27;:&#x27;#5CC8C2&#x27;;g.font=&#x27;600 28px &#x27;+F;g.fillText(&#x27;Answer&#x27;,cx+13-g.measureText(&#x27;Answer&#x27;).width/2,cy+10);g.globalAlpha=1;
+requestAnimationFrame(f)}requestAnimationFrame(f);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Beyond naive RAG · where it’s heading</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Agentic RAG</h2>
+</div>
+<div style="width:840px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:32px;line-height:1.4;color:#F4EFE6">The retriever becomes a <i>tool</i>. The model decides when to search, what to search for, and when it has enough.</p>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #5CC8C2;padding:8px 0 8px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;color:#5CC8C2">GAINS</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Multi-hop questions, choosing among sources, recovering from a bad first search.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #FF8A7A;padding:8px 0 8px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;color:#FF8A7A">COSTS</p>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Several LLM calls per question: more latency and tokens. Errors compound, so evaluate the whole trajectory, not just the final answer.</p>
+</div>
+</div>
+<aside>This is the direction most production systems moved in through 2025 and 2026: instead of “retrieve once, then generate”, the LLM runs a loop with retrieval as one of its tools. It plans, searches, reads what came back, judges whether it has enough evidence, and either searches again with a refined query or answers.
+
+Connects everything: query rewriting and decomposition become the “Plan” step; self-grading (Self-RAG / CRAG ideas) becomes the “Enough?” step; and the search tool can be a vector index, a SQL database, or the web.
+
+Trade-off: noticeably better on multi-hop and research-style questions, but slower and more expensive per question, and harder to evaluate: you need to look at which searches it ran, not just the answer. For simple FAQ lookups, single-shot RAG is still faster and cheaper.</aside>
+</section>
+</div>
+<div class="slide" data-i="19">
+<section id="long-context" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">The recurring debate</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">Did long context kill RAG?</h2>
+</div>
+<table style="width:1664px;font-size:28px;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif">
+<tr style="background:#1B2033"><th style="width:34%;color:#F4EFE6"> </th><th style="width:33%;color:#F4EFE6">Stuff the whole window</th><th style="width:33%;color:#F4EFE6">Retrieve first</th></tr>
+<tr><td><b>Cost per query</b></td><td>Pay for every token, every time</td><td style="color:#1F6F6A"><b>Better:</b>a few thousand tokens</td></tr>
+<tr style="background:#EDE6D8"><td><b>Latency</b></td><td>Grows with context length</td><td style="color:#1F6F6A"><b>Better:</b>small prompt</td></tr>
+<tr><td><b>Data that changes daily</b></td><td>Rebuild the prompt</td><td style="color:#1F6F6A"><b>Better:</b>update the index</td></tr>
+<tr style="background:#EDE6D8"><td><b>Per-user permissions</b></td><td>Hard to enforce</td><td style="color:#1F6F6A"><b>Better:</b>filter at search time</td></tr>
+<tr><td><b>Reasoning across one whole document</b></td><td style="color:#1F6F6A"><b>Better:</b>sees everything</td><td>Can miss connections</td></tr>
+<tr style="background:#EDE6D8"><td><b>Small, stable corpus</b></td><td style="color:#1F6F6A"><b>Better:</b>simplest option</td><td>Unneeded machinery</td></tr>
+</table>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:40px;line-height:1.25;color:#1B2033">Today’s default is both: <span style="color:#A85F00">retrieve generously, then let a long-context model reason over what came back.</span></p>
+<aside>Every time context windows grow, someone declares RAG dead. Ask the room for a show of hands: “Who thinks RAG will still matter in 3 years?”
+
+The honest answer is “it depends on the workload”. Long context wins when the material is one document or a small, stable set and the task needs reasoning across all of it. Retrieval wins on cost (you’re not paying to re-read the whole corpus on every query), latency, freshness, access control (user A must never see user B’s documents), and citations. And “lost in the middle” / context-rot results mean a bigger window isn’t the same as better use of it.
+
+The convergence: retrieval narrows a huge corpus to a generous candidate set (whole sections rather than tiny chunks), and a long-context model reasons over it. Prompt caching blurs the line further for frequently reused documents.</aside>
+</section>
+</div>
+<div class="slide" data-i="20">
+<section id="eval" data-transition="fade" style="background:#0E1220;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Evaluation</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Debug it like a ladder</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:32px;align-items:center;background:#161B30;border-radius:16px;padding:20px 32px"><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;color:#F2A541;width:48px">1</p><p style="flex:1;font-size:30px;color:#F4EFE6">Is the answer in the corpus at all?</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2;width:560px">coverage</p></div>
+<div style="display:flex;gap:32px;align-items:center;background:#161B30;border-radius:16px;padding:20px 32px"><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;color:#F2A541;width:48px">2</p><p style="flex:1;font-size:30px;color:#F4EFE6">Did retrieval find it?</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2;width:560px">recall@k · MRR · nDCG</p></div>
+<div style="display:flex;gap:32px;align-items:center;background:#161B30;border-radius:16px;padding:20px 32px"><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;color:#F2A541;width:48px">3</p><p style="flex:1;font-size:30px;color:#F4EFE6">Did it survive into the prompt?</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2;width:560px">rerank cutoff · truncation</p></div>
+<div style="display:flex;gap:32px;align-items:center;background:#161B30;border-radius:16px;padding:20px 32px"><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;color:#F2A541;width:48px">4</p><p style="flex:1;font-size:30px;color:#F4EFE6">Is the answer faithful to that context?</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2;width:560px">faithfulness · groundedness</p></div>
+<div style="display:flex;gap:32px;align-items:center;background:#161B30;border-radius:16px;padding:20px 32px"><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;color:#F2A541;width:48px">5</p><p style="flex:1;font-size:30px;color:#F4EFE6">Does it actually answer the question?</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#5CC8C2;width:560px">answer relevance</p></div>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#B8C0D4">Start with 50 to 100<span style="color:#F4EFE6">real</span> questions and their correct sources. LLM judges (e.g. RAGAS) scale this up, but spot-check the judge by hand.</p>
+<aside>The most useful practical slide. “The RAG system gave a wrong answer” is not a diagnosis. Walk down the ladder: if the answer isn’t in the corpus, no retriever can help (that’s a content problem). If it’s in the corpus but not in the top-k, it’s a retrieval problem: chunking, embeddings, hybrid, reranking. If it was retrieved but cut before the prompt, it’s a reranker threshold or context budget problem. If it was in the prompt but the model ignored or contradicted it, it’s a generation problem (lost in the middle, prompt, model). If it’s faithful but doesn’t answer the question, the query understanding is the issue.
+
+Metric definitions: recall@k = fraction of questions whose gold source is in the top k. MRR = mean of 1/rank of the first relevant hit. nDCG = ranking quality with graded relevance, discounting lower positions. Faithfulness = are the answer’s claims supported by the retrieved context. Answer relevance = does it address the question.
+
+Apply it to Air Canada: rung 1 passed (the policy page existed). The failure was at rung 2, 3 or 4, and that’s exactly what our demo reproduced.</aside>
+</section>
+</div>
+<div class="slide" data-i="21">
+<section id="critique" data-transition="fade" style="background:#F4EFE6;color:#1B2033;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#A85F00">My take</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#1B2033">Three things RAG doesn’t fix</h2>
+</div>
+<div style="display:flex;gap:32px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-top:8px solid #F2A541;border-radius:16px;padding:40px">
+<p style="font-family:'Fraunces', Georgia, serif;font-size:72px;line-height:1;color:#A85F00">01</p>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500;line-height:1.15">It moves hallucination; it doesn’t remove it</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">Retrieve a relevant but outdated page and you get a confident, <i>cited</i>, wrong answer. Citations raise trust faster than they raise accuracy.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-top:8px solid #5CC8C2;border-radius:16px;padding:40px">
+<p style="font-family:'Fraunces', Georgia, serif;font-size:72px;line-height:1;color:#1F6F6A">02</p>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500;line-height:1.15">The corpus is the new attack surface</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">Any indexed document can carry hidden instructions or poisoned facts. Retrieval must enforce the same permissions as the documents.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFFFF;border:2px solid #E2DACB;border-top:8px solid #1B2033;border-radius:16px;padding:40px">
+<p style="font-family:'Fraunces', Georgia, serif;font-size:72px;line-height:1;color:#1B2033">03</p>
+<h3 style="font-family:'Fraunces', Georgia, serif;font-size:40px;font-weight:500;line-height:1.15">Benchmarks grade the easy part</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5068">“Was the golden chunk in the top 20?” ignores real corpora that contradict themselves, like an old policy page next to a new one.</p>
+</div>
+</div>
+<aside>DRAFT: rewrite these in your own words; the rubric explicitly asks for your analysis, critique and reflection. Keep, cut or replace any of the three.
+
+1. RAG relocates the failure. Grounding helps when the right document is retrieved. When a plausible-but-wrong document is retrieved, the model now has “evidence” and a citation, which makes the wrong answer more convincing. Users rarely click citations.
+
+2. Security. Indirect prompt injection: an attacker plants text in a web page, email or shared doc (“ignore previous instructions and…”); when it’s retrieved, it lands inside the model’s context. Also data poisoning and permission leaks: if the index ignores document ACLs, RAG becomes a data-exfiltration tool.
+
+3. Evaluation mismatch. Common retrieval benchmarks assume one correct passage. Real corpora have duplicates, stale versions and contradictions; the hard question is which source to trust, and that’s mostly untested. Tie back: the Air Canada site itself contradicted itself (chatbot vs. policy page).
+
+Reflection prompt for yourself: what surprised you most while preparing this? Say it out loud; it’s the most memorable part of a tutorial.</aside>
+</section>
+</div>
+<div class="slide" data-i="22">
+<section id="takeaways" data-transition="fade" style="background:radial-gradient(circle at 85% 20%, #1C2445 0%, #0E1220 60%);color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">If you remember five things</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Takeaways</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;gap:40px;align-items:baseline"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F2A541;width:60px">01</p><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.2;color:#F4EFE6">Retrieval is the product; the LLM is the last mile.</p></div>
+<div style="display:flex;gap:40px;align-items:baseline"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F2A541;width:60px">02</p><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.2;color:#F4EFE6">Start with hybrid search plus a reranker, before anything fancy.</p></div>
+<div style="display:flex;gap:40px;align-items:baseline"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F2A541;width:60px">03</p><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.2;color:#F4EFE6">Give every chunk its context: title, section, source.</p></div>
+<div style="display:flex;gap:40px;align-items:baseline"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F2A541;width:60px">04</p><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.2;color:#F4EFE6">Fewer, better chunks. Order matters.</p></div>
+<div style="display:flex;gap:40px;align-items:baseline"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F2A541;width:60px">05</p><p style="font-family:'Fraunces', Georgia, serif;font-size:44px;line-height:1.2;color:#F4EFE6">Measure retrieval and generation separately, on real questions.</p></div>
+</div>
+<aside>Read these slowly; they map one-to-one onto the sections. 01: the hook and the halfway statement. 02: hybrid + reranking slides. 03: chunking and contextual retrieval. 04: lost in the middle. 05: the evaluation ladder.
+
+Close the loop on the hook: “With any one of these, Air Canada’s bot would have had a decent chance of quoting the real policy instead of inventing one.”</aside>
+</section>
+</div>
+<div class="slide" data-i="23">
+<section id="discuss" data-transition="fade" style="background:#161B30;color:#F4EFE6;font-family:'Space Grotesk', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;gap:80px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#F2A541">Your turn</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:72px;font-weight:500;line-height:1.1;color:#F4EFE6">Discussion</h2>
+</div>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:36px;line-height:1.3;color:#F4EFE6;border-left:4px solid #F2A541;padding-left:32px">A chatbot cites a superseded policy and a customer relies on it. Who is at fault: the retriever, the model, or the people who wrote the docs?</p>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:36px;line-height:1.3;color:#F4EFE6;border-left:4px solid #5CC8C2;padding-left:32px">If context windows grow 100× again, which boxes of this pipeline survive?</p>
+<p style="font-family:'Fraunces', Georgia, serif;font-size:36px;line-height:1.3;color:#F4EFE6;border-left:4px solid #B8C0D4;padding-left:32px">Should a RAG system refuse to answer when retrieval confidence is low?</p>
+</div>
+<div style="width:600px;display:flex;flex-direction:column;gap:16px;background:#0E1220;border:2px solid #2A3150;border-radius:24px;padding:40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#8A93AD">References</p>
+<p style="font-size:24px;line-height:1.5;color:#B8C0D4">Lewis et al. 2020 · RAG<br>Karpukhin et al. 2020 · DPR<br>Khattab &amp; Zaharia 2020 · ColBERT<br>Malkov &amp; Yashunin 2016 · HNSW<br>Cormack et al. 2009 · RRF<br>Gao et al. 2022 · HyDE<br>Liu et al. 2023 · Lost in the Middle<br>Asai et al. 2023 · Self-RAG<br>Yan et al. 2024 · CRAG<br>Edge et al. 2024 · GraphRAG<br>Anthropic 2024 · Contextual Retrieval<br>Moffatt v. Air Canada, 2024 BCCRT 149</p>
+</div>
+<aside>Use whatever time is left. Question 1 is the most fun: there’s no clean answer, and it ties back to the hook and the critique slide. Question 2 forces people to separate “retrieval as a workaround for small windows” from “retrieval as access control, freshness and citations”. Question 3 is about abstention: systems that say “I don’t know” are less impressive in demos but safer in production.
+
+Thank the class. Point them to the notebook link if they want to try the demo themselves.</aside>
+</section>
+</div>
+</div>
+<div id="notes"></div>
+<div id="hint">Use the arrow keys or click to move · F for full screen · N for speaker notes</div>
+<div id="ui"><button id="prev" aria-label="Previous slide">&#8592;</button><span id="count"></span><button id="next" aria-label="Next slide">&#8594;</button><button id="fs">Full screen</button><button id="nb">Notes</button></div>
+<script>
+(function(){
+var slides=[].slice.call(document.querySelectorAll('.slide')),stage=document.getElementById('stage'),n=slides.length,i=0;
+function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='translate(-50%,-50%) scale('+s+')';}
+function show(k){i=Math.max(0,Math.min(n-1,k));slides.forEach(function(el,j){el.classList.toggle('on',j===i)});
+  document.getElementById('count').textContent=(i+1)+' / '+n;
+  var a=slides[i].querySelector('aside');document.getElementById('notes').textContent=a?a.textContent.trim():'No notes for this slide.';
+  if(location.hash!=='#'+(i+1))history.replaceState(null,'','#'+(i+1));}
+function next(){show(i+1)}function prev(){show(i-1)}
+addEventListener('resize',fit);fit();
+var h=parseInt(location.hash.slice(1),10);show(isNaN(h)?0:h-1);
+addEventListener('keydown',function(e){
+  if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key)>=0){e.preventDefault();next();}
+  else if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key)>=0){e.preventDefault();prev();}
+  else if(e.key==='Home')show(0);else if(e.key==='End')show(n-1);
+  else if(e.key==='f'||e.key==='F')toggleFs();else if(e.key==='n'||e.key==='N')toggleNotes();});
+document.getElementById('stage').addEventListener('click',function(e){if(e.target.closest('a'))return;(e.clientX>innerWidth/3?next:prev)();});
+document.getElementById('next').onclick=next;document.getElementById('prev').onclick=prev;
+function toggleFs(){if(document.fullscreenElement)document.exitFullscreen();else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});}
+function toggleNotes(){document.getElementById('notes').classList.toggle('on');}
+document.getElementById('fs').onclick=toggleFs;document.getElementById('nb').onclick=toggleNotes;
+setTimeout(function(){document.getElementById('hint').style.opacity=0},4500);
+})();
+</script>
+</body>
+</html>
